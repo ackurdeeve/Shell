@@ -1,33 +1,32 @@
 #!/usr/bin/env bash
 # chkconfig: 2345 90 10
-# description: A Stable & Secure Tunnel Based On KCP with N:M Multiplexing
+# description: Fast, multi-platform web server with automatic HTTPS
 
 ### BEGIN INIT INFO
-# Provides:          kcptun
+# Provides:          caddy
 # Required-Start:    $network $syslog
 # Required-Stop:     $network
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
 # Short-Description: It can help you improve network speed
-# Description:       Start or stop the  kcptun server
+# Description:       Start or stop the  caddy server
 ### END INIT INFO
 
 
-if [ -f /usr/local/kcptun/kcptun-server ]; then
-    DAEMON=/usr/local/kcptun/kcptun-server
-elif [ -f /usr/bin/kcptun-server ]; then
-    DAEMON=/usr/bin/kcptun-server
+if [ -f /usr/local/caddy/caddy ]; then
+    DAEMON=/usr/local/caddy/caddy
 fi
-NAME=kcptun-server
-CONF=/etc/kcptun/config.json
+
+NAME=caddy
+CONF=/usr/local/caddy/Caddyfile
 PID_DIR=/var/run
-PID_FILE=$PID_DIR/kcptun-server.pid
+PID_FILE=$PID_DIR/$NAME.pid
 RET_VAL=0
 
 [ -x $DAEMON ] || exit 0
 
 check_pid(){
-	get_pid=`ps -ef |grep -v grep | grep $NAME |awk '{print $2}'`
+	get_pid=`ps -ef |grep -v grep |grep -v "init.d" |grep -v "service" |grep $NAME |awk '{print $2}'`
 }
 
 check_pid
@@ -85,7 +84,8 @@ do_start() {
         echo "$NAME (pid $PID) is already running."
         return 0
     fi
-    $DAEMON -c $CONF > /dev/null 2>&1 &
+    ulimit -n 51200
+    nohup "$DAEMON" --conf="$CONF" -agree > /dev/null 2>&1 &
     check_pid
     echo $get_pid > $PID_FILE
     if check_running; then

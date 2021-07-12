@@ -1,22 +1,24 @@
 #!/usr/bin/env bash
+# chkconfig: 2345 90 10
+# description: Fast, multi-platform web server with automatic HTTPS
 
 ### BEGIN INIT INFO
-# Provides:          cloak
+# Provides:          caddy2
 # Required-Start:    $network $syslog
 # Required-Stop:     $network
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
-# Short-Description: A Stable & Secure Tunnel Based On KCP with N:M Multiplexing
-# Description:       Start or stop the  cloak server
+# Short-Description: It can help you improve network speed
+# Description:       Start or stop the  caddy server
 ### END INIT INFO
 
 
-if [ -f /usr/local/bin/ck-server ]; then
-    DAEMON=/usr/local/bin/ck-server
+if [ -f /usr/local/caddy/caddy ]; then
+    DAEMON=/usr/local/caddy/caddy
 fi
 
-NAME=ck-server
-CONF=/etc/cloak/ckserver.json
+NAME=caddy
+CONF=/usr/local/caddy/Caddyfile
 PID_DIR=/var/run
 PID_FILE=$PID_DIR/$NAME.pid
 RET_VAL=0
@@ -24,7 +26,7 @@ RET_VAL=0
 [ -x $DAEMON ] || exit 0
 
 check_pid(){
-	get_pid=`ps -ef |grep -v grep | grep $NAME |awk '{print $2}'`
+	get_pid=`ps -ef |grep -v grep |grep -v "init.d" |grep -v "service" |grep $NAME |awk '{print $2}'`
 }
 
 check_pid
@@ -82,7 +84,8 @@ do_start() {
         echo "$NAME (pid $PID) is already running."
         return 0
     fi
-    $DAEMON -c $CONF > /dev/null 2>&1 &
+    ulimit -n 51200
+    nohup "$DAEMON" run --config "$CONF" > /dev/null 2>&1 &
     check_pid
     echo $get_pid > $PID_FILE
     if check_running; then

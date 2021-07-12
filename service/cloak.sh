@@ -1,32 +1,38 @@
 #!/usr/bin/env bash
+# chkconfig: 2345 90 10
+# description: A censorship circumvention tool to evade detection against state adversaries
 
 ### BEGIN INIT INFO
-# Provides:          Shadowsocks-rust
-# Required-Start:    $network $local_fs $remote_fs
-# Required-Stop:     $network $local_fs $remote_fs
+# Provides:          cloak
+# Required-Start:    $network $syslog
+# Required-Stop:     $network
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
-# Short-Description: Fast tunnel proxy that helps you bypass firewalls
-# Description:       Start or stop the Shadowsocks-rust server
+# Short-Description: It can help you improve network speed
+# Description:       Start or stop the  cloak server
 ### END INIT INFO
 
 
-if [ -f /usr/local/bin/ssserver ]; then
-    DAEMON=/usr/local/bin/ssserver
-elif [ -f /usr/bin/ssserver ]; then
-    DAEMON=/usr/bin/ssserver
+if [ -f /usr/local/bin/ck-server ]; then
+    DAEMON=/usr/local/bin/ck-server
 fi
-NAME=Shadowsocks-rust
-CONF=/etc/shadowsocks/config.json
+
+NAME=ck-server
+CONF=/etc/cloak/ckserver.json
+LOG=/var/log/cloak.log
 PID_DIR=/var/run
-PID_FILE=$PID_DIR/shadowsocks-rust.pid
+PID_FILE=$PID_DIR/$NAME.pid
 RET_VAL=0
 
 [ -x $DAEMON ] || exit 0
 
 check_pid(){
-	get_pid=`ps -ef |grep -v grep | grep ssserver |awk '{print $2}'`
+	get_pid=`ps -ef |grep -v grep | grep $NAME |awk '{print $2}'`
 }
+
+if [ ! -d "$(dirname ${LOG})" ]; then
+    mkdir -p $(dirname ${LOG})
+fi
 
 check_pid
 if [ -z $get_pid ]; then
@@ -47,6 +53,7 @@ if [ ! -f $CONF ]; then
     echo "$NAME config file $CONF not found"
     exit 1
 fi
+
 
 check_running() {
     if [ -e $PID_FILE ]; then
@@ -82,7 +89,8 @@ do_start() {
         echo "$NAME (pid $PID) is already running."
         return 0
     fi
-    $DAEMON -c $CONF > /dev/null 2>&1 &
+    ulimit -n 51200
+    nohup $DAEMON -c $CONF -verbosity debug >  $LOG 2>&1 &
     check_pid
     echo $get_pid > $PID_FILE
     if check_running; then

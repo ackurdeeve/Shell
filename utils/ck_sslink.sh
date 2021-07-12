@@ -5,11 +5,12 @@ get_link_of_ck2(){
         local shadowsockspwd=$(cat ${SHADOWSOCKS_CONFIG} | jq -r .password)
         local ckpub=$(cat ${CK_CLIENT_CONFIG} | jq -r .PublicKey)
         local ckservername=$(cat ${CK_CLIENT_CONFIG} | jq -r .ServerName)
+        local encryptionMethod=$(cat ${CK_CLIENT_CONFIG} | jq -r .EncryptionMethod)
         
         local link_head="ss://"
         local cipher_pwd=$(get_str_base64_encode "${shadowsockscipher}:${shadowsockspwd}")
         local ip_port_plugin="@$(get_ip):443/?plugin=ck-client"    
-        local plugin_opts=$(get_str_replace ";Transport=direct;ProxyMethod=shadowsocks;EncryptionMethod=plain;UID=${ckauid};PublicKey=${ckpub};ServerName=${ckservername};NumConn=4;BrowserSig=chrome;StreamTimeout=300")
+        local plugin_opts=$(get_str_replace ";Transport=direct;ProxyMethod=shadowsocks;EncryptionMethod=${encryptionMethod};UID=${ckauid};PublicKey=${ckpub};ServerName=${ckservername};NumConn=4;BrowserSig=chrome;StreamTimeout=300")
         local ss_link="${link_head}${cipher_pwd}${ip_port_plugin}${plugin_opts}"
         
         echo
@@ -24,4 +25,15 @@ get_link_of_ck2(){
         echo
         exit 1
     fi
+}
+
+gen_ssurl_by_uid(){
+    local CK_UID=$1
+
+    if [ ! "$(command -v ck-server)" ]; then
+        echo -e "\n${Error} 仅支持 ss + cloak 组合下使用，请确认是否是以该组合形式运行.\n"
+        exit 1
+    fi
+
+    get_link_of_ck2 "${CK_UID}"
 }
